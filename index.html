@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-D Tree Canvas</title>
+    <style>
+        #canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="1400" height="550"></canvas>
+    <div>
+        X: <input type="text" id="mouseX" readonly>
+        Y: <input type="text" id="mouseY" readonly>
+    </div>
+    <script>
+        class Punto {
+            constructor(x = 0, y = 0) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        class Nodo {
+            constructor(P, eje = 0, Izq = null, Der = null) {
+                this.P = P;
+                this.eje = eje;
+                this.Izq = Izq;
+                this.Der = Der;
+            }
+        }
+
+        class k2dTree {
+            constructor() {
+                this.Raiz = null;
+            }
+
+            Insertar(PP) {
+                this.Raiz = this.Ins(PP, 0, this.Raiz);
+            }
+
+            Ins(PP, e, R) {
+                if (R == null) {
+                    return new Nodo(PP, e);
+                } else {
+                    if (e == 0) {
+                        if (PP.x < R.P.x) {
+                            R.Izq = this.Ins(PP, 1, R.Izq);
+                        } else {
+                            R.Der = this.Ins(PP, 1, R.Der);
+                        }
+                    } else {
+                        if (PP.y < R.P.y) {
+                            R.Izq = this.Ins(PP, 0, R.Izq);
+                        } else {
+                            R.Der = this.Ins(PP, 0, R.Der);
+                        }
+                    }
+                    return R;
+                }
+            }
+
+            MostrarR(ctx, x, y, a) {
+                this.MosR(this.Raiz, ctx, x, y, a);
+            }
+
+            MosR(R, ctx, x, y, a) {
+                if (R != null) {
+                    const nodeRadius = 15;
+                    ctx.beginPath();
+                    ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = "lightblue";
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = "black";
+                    ctx.fillText(`(${R.P.x}, ${R.P.y})`, x - nodeRadius, y - nodeRadius - 5);
+
+                    if (R.Izq) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + nodeRadius);
+                        ctx.lineTo(x - a, y + 50 - nodeRadius);
+                        ctx.stroke();
+                        this.MosR(R.Izq, ctx, x - a, y + 50, a / 2);
+                    }
+
+                    if (R.Der) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + nodeRadius);
+                        ctx.lineTo(x + a, y + 50 - nodeRadius);
+                        ctx.stroke();
+                        this.MosR(R.Der, ctx, x + a, y + 50, a / 2);
+                    }
+                }
+            }
+
+            Mostrar(ctx, xi, yi, xf, yf) {
+                this.Mos(this.Raiz, ctx, xi, yi, xf, yf);
+            }
+
+            Mos(R, ctx, xi, yi, xf, yf) {
+                if (R != null) {
+                    let xx = R.P.x;
+                    let yy = R.P.y;
+                    if (R.eje == 1) {
+                        ctx.beginPath();
+                        ctx.moveTo(xi, yy);
+                        ctx.lineTo(xf, yy);
+                        ctx.stroke();
+                        this.Mos(R.Izq, ctx, xi, yi, xf, yy);
+                        this.Mos(R.Der, ctx, xi, yy, xf, yf);
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(xx, yi);
+                        ctx.lineTo(xx, yf);
+                        ctx.stroke();
+                        this.Mos(R.Izq, ctx, xi, yi, xx, yf);
+                        this.Mos(R.Der, ctx, xx, yi, xf, yf);
+                    }
+                    ctx.beginPath();
+                    ctx.arc(xx, yy, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const tree = new k2dTree();
+
+        const pxi = 10, pyi = 50, pxf = 410, pyf = 450; // Cambié las dimensiones del cuadro aquí
+
+        canvas.addEventListener('mousemove', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const xPos = event.clientX - rect.left;
+            const yPos = event.clientY - rect.top;
+            document.getElementById('mouseX').value = xPos;
+            document.getElementById('mouseY').value = yPos;
+        });
+
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const xPos = event.clientX - rect.left;
+            const yPos = event.clientY - rect.top;
+            if (xPos < pxf && xPos > pxi && yPos < pyf && yPos > pyi) {
+                tree.Insertar(new Punto(xPos, yPos));
+                draw();
+            }
+        });
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeRect(pxi, pyi, pxf - pxi, pyf - pyi);
+            tree.Mostrar(ctx, pxi, pyi, pxf, pyf);
+            tree.MostrarR(ctx, 950, 50, 200); // Ajusté la posición del árbol
+        }
+
+        draw();
+    </script>
+</body>
+</html>
